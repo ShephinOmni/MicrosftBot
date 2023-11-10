@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2.0">
+    <link rel="icon" type="image/x-icon" href="data:;base64,iVBORw0KGgo=">
+</head>
+<body>
+    <div class="chatbot-container">
+        <div id="header">
+            <h1>Chatbot</h1>
+        </div>
+        <div id="conversation">
+            <!-- User's message will be on the right -->
+            <div class="user-message">
+                <p class="user-text"></p>
+            </div>
+
+            <!-- Chatbot's message will be on the left -->
+            <div class="chatbot-message">
+                <p class="chatbot-text"></p>
+            </div>
+        </div>
+    
+        <!-- Add a textbox for user input -->
+        <form id="input-form" onsubmit="sendMessage(event)">
+            <message-container>
+                <input id="input-field" type="text" placeholder="Type your message here">
+                <button id="submit-button" type="submit">Send</button>
+            </message-container>
+        </form>
+    </div>
+
+
+    <script src="{{ url_for('static', filename='chatbot.js') }}"></script>
+
+</body>
+</html>
