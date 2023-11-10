@@ -1,0 +1,4 @@
+flask
+botbuilder
+openai
+python-dotenv
