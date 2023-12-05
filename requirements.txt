@@ -1,4 +1,4 @@
 flask
-botbuilder
+Flask-SocketIO
 openai
 python-dotenv
