@@ -1,41 +1,105 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2.0">
-    <link rel="icon" type="image/x-icon" href="data:;base64,iVBORw0KGgo=">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../static/style.css">
+  <title>Video Chat Application</title>
 </head>
 <body>
-    <div class="chatbot-container">
-        <div id="header">
-            <h1>Chatbot</h1>
+    <div class="container">
+        <!-- Video chat window -->
+        <div class="video-chat-window">
+            <img id="avatar" src="path_to_avatar_image.png" alt="Avatar" class="user-avatar">
+            <video id="videoElement" class="video-placeholder" autoplay playsinline muted style="display: none;"></video>
+        </div>          
+      
+        <!-- Split button dropdowns for Microphone and Camera -->
+        <div class="row mb-3"> <!-- Add margin bottom to the row containing the buttons -->
+          <div class="col-md-6 mb-2"> <!-- Bootstrap 4: Use mb-2 for Bootstrap 4 and mb-3 for Bootstrap 5 -->
+            <div class="btn-group" style="width: 100%;">
+              <button type="button" class="btn btn-custom-mic" style="width: 80%;">
+                Microphone
+              </button>
+              <button type="button" class="btn btn-custom-mic dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" style="width: 20%;">
+                <span class="sr-only">Toggle Dropdown</span>
+              </button>
+              <ul class="dropdown-menu" style="width: 100%;">
+                <!-- Dropdown menu items for microphone -->
+                <li><a class="dropdown-item" href="#">Default - Microphone (Realtek(R) Audio)</a></li>
+                <li><a class="dropdown-item" href="#">Communications - Microphone (Realtek(R) Audio)</a></li>
+                <li><a class="dropdown-item" href="#">Microphone (Realtek(R) Audio)</a></li>
+                <!-- More options here -->
+            </ul>
         </div>
-        <div id="conversation">
-            <!-- User's message will be on the right -->
-            <div class="user-message">
-                <p class="user-text"></p>
+      </div>
+            <div class="col-md-6 mb-2"> <!-- Add margin bottom to the individual columns -->
+                <div class="btn-group" style="width: 100%;">
+                    <button type="button" id="camera-btn" class="btn btn-secondary" style="width: 100%;">
+                        Camera
+                      </button>                      
+                <button type="button" class="btn btn-custom-mic dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" style="width: 20%;">
+                    <span class="sr-only">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu" style="width: 20%;">
+                    <li><a class="dropdown-item" href="#">Web Cam</a></li>
+              </ul>
             </div>
-
-            <!-- Chatbot's message will be on the left -->
-            <div class="chatbot-message">
-                <p class="chatbot-text"></p>
+          </div>
+        </div>
+          
+        <!-- Dropdown for Language selection -->
+         <!-- Dropdown for Language selection -->
+        <div class="row">
+            <div class="col">
+            <select class="form-control select-box">
+                <option>English (United States)</option>
+                <!-- Other language options here -->
+            </select>
             </div>
         </div>
-    
-        <!-- Add a textbox for user input -->
-        <form id="input-form" onsubmit="sendMessage(event)">
-            <message-container>
-                <input id="input-field" type="text" placeholder="Type your message here">
-                <button id="submit-button" type="submit">Send</button>
-            </message-container>
-        </form>
+      
+        <!-- Form for username and "Join Room" button -->
+        <input type="text" class="form-control" placeholder="Username">
+        <button class="join-btn">Join Room</button>
+        
+        <!-- Button for adding participants -->
+        <button class="join-btn" style="margin-top: 10px;">Add Participant</button>
     </div>
+    
+  <!-- Bootstrap JS, jQuery, and Popper.js for Bootstrap 4 -->
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <script src="../static/chatbot.js"></script>
+  // Place this script tag just before the closing body tag of your HTML
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var videoElement = document.querySelector('.video-placeholder');
 
+    function startCamera() {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(function(stream) {
+            videoElement.srcObject = stream;
+            videoElement.play();
+          }).catch(function(error) {
+            console.error("Error accessing the camera: ", error);
+            alert("Error accessing the camera.");
+          });
+      } else {
+        alert("Your browser does not support media devices.");
+        return;
+      }
+    }
 
-    <script src="{{ url_for('static', filename='chatbot.js') }}"></script>
+    document.getElementById('camera-btn').addEventListener('click', function() {
+      startCamera();
+    });
+  });
+</script>
 
 </body>
 </html>
