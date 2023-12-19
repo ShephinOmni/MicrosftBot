@@ -1,28 +1,26 @@
 <!-- index.html -->
-<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- ... other head elements ... -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <link rel="stylesheet" href="../static/style.css">
   <title>Video Chat Application</title>
 </head>
 <body>
-    <div class="container">
-        <!-- Video chat window -->
-        <div class="video-chat-window">
-            <img id="avatar" src="path_to_avatar_image.png" alt="Avatar" class="user-avatar">
-            <video id="videoElement" class="video-placeholder" autoplay playsinline muted style="display: none;"></video>
-        </div>          
-      
+  <div class="container">
+    <!-- Video chat window -->
+    <div class="video-chat-window">
+      <img id="avatar" src="static\images\User.png" alt="Avatar" class="user-avatar">
+      <video id="videoElement" class="video-placeholder" autoplay playsinline muted style="display: none;"></video>
+    </div>
         <!-- Split button dropdowns for Microphone and Camera -->
         <div class="row mb-3"> <!-- Add margin bottom to the row containing the buttons -->
           <div class="col-md-6 mb-2"> <!-- Bootstrap 4: Use mb-2 for Bootstrap 4 and mb-3 for Bootstrap 5 -->
             <div class="btn-group" style="width: 100%;">
-              <button type="button" class="btn btn-custom-mic" style="width: 80%;">
+              </button><button type="button" id="microphone-btn" class="btn btn-custom-mic" style="width: 80%;">
                 Microphone
               </button>
+              
               <button type="button" class="btn btn-custom-mic dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" style="width: 20%;">
                 <span class="sr-only">Toggle Dropdown</span>
               </button>
@@ -37,7 +35,7 @@
       </div>
             <div class="col-md-6 mb-2"> <!-- Add margin bottom to the individual columns -->
                 <div class="btn-group" style="width: 100%;">
-                    <button type="button" id="camera-btn" class="btn btn-secondary" style="width: 100%;">
+                    <button type="button" id="camera-btn" class="btn btn-custom-mic" style="width: 100%;">
                         Camera
                       </button>                      
                 <button type="button" class="btn btn-custom-mic dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" style="width: 20%;">
@@ -51,7 +49,6 @@
         </div>
           
         <!-- Dropdown for Language selection -->
-         <!-- Dropdown for Language selection -->
         <div class="row">
             <div class="col">
             <select class="form-control select-box">
@@ -62,8 +59,10 @@
         </div>
       
         <!-- Form for username and "Join Room" button -->
-        <input type="text" class="form-control" placeholder="Username">
-        <button class="join-btn">Join Room</button>
+        <input type="text" id="username" class="form-control" placeholder="Username">
+        <button id="join-btn" class="join-btn">Join Room</button>
+
+
         
         <!-- Button for adding participants -->
         <button class="join-btn" style="margin-top: 10px;">Add Participant</button>
@@ -74,32 +73,52 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
   <script src="../static/chatbot.js"></script>
-  // Place this script tag just before the closing body tag of your HTML
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    var videoElement = document.querySelector('.video-placeholder');
 
-    function startCamera() {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(function(stream) {
-            videoElement.srcObject = stream;
-            videoElement.play();
-          }).catch(function(error) {
-            console.error("Error accessing the camera: ", error);
-            alert("Error accessing the camera.");
-          });
-      } else {
-        alert("Your browser does not support media devices.");
-        return;
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var videoElement = document.getElementById('videoElement');
+      var cameraButton = document.getElementById('camera-btn');
+      var avatarElement = document.getElementById('avatar');
+      var joinButton = document.getElementById('join-btn');
+      var stream = null;
+
+      function toggleCamera() {
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+          videoElement.srcObject = null;
+          cameraButton.textContent = 'Turn Camera On';
+          avatarElement.style.display = 'block';
+        } else {
+          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+              .then(function(newStream) {
+                stream = newStream;
+                videoElement.srcObject = stream;
+                cameraButton.textContent = 'Turn Camera Off';
+                videoElement.play();
+                avatarElement.style.display = 'none';
+              }).catch(function(error) {
+                console.error("Error accessing the camera: ", error);
+                alert("Error accessing the camera.");
+              });
+          } else {
+            alert("Your browser does not support media devices.");
+          }
+        }
       }
-    }
 
-    document.getElementById('camera-btn').addEventListener('click', function() {
-      startCamera();
+      cameraButton.addEventListener('click', toggleCamera);
+
+      joinButton.addEventListener('click', function() {
+        const username = document.getElementById('username').value.trim();
+        if(username === "") {
+          alert('Please enter a username.');
+        } else {
+          window.location.href = '/meeting';
+        }
+      });
     });
-  });
-</script>
-
+  </script>
 </body>
 </html>

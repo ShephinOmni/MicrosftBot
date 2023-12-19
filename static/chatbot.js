@@ -1,84 +1,59 @@
 document.addEventListener('DOMContentLoaded', function() {
   var videoElement = document.getElementById('videoElement');
-  var avatarElement = document.getElementById('avatar');
   var cameraButton = document.getElementById('camera-btn');
-  var stream = null; // This will hold the stream
+  var microphoneButton = document.getElementById('microphone-btn');
+  var cameraStream = null;
+  var microphoneStream = null;
 
-  function toggleCamera() {
-    if (stream) {
-      // If the stream is already active, stop all tracks
-      stream.getTracks().forEach(function(track) {
-        track.stop();
-      });
-  
-      // Ensure the camera light is turned off by removing the stream
-      if (videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => track.stop());
+  async function toggleCamera() {
+      try {
+          if (cameraStream) {
+              stopMediaStream(cameraStream);
+              cameraButton.textContent = 'Turn Camera On';
+          } else {
+              cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+              videoElement.srcObject = cameraStream;
+              videoElement.style.display = 'block';
+              cameraButton.textContent = 'Turn Camera Off';
+          }
+      } catch (error) {
+          console.error("Error accessing the camera: ", error);
+          alert("Error accessing the camera.");
       }
-  
-      // Clear the video element source
-      videoElement.srcObject = null;
-      stream = null;
-  
-      // Update UI to reflect the camera is off
-      videoElement.style.display = 'none'; // Hide the video element
-      avatarElement.style.display = 'block'; // Show the avatar
-      cameraButton.textContent = 'Turn Camera On'; // Update button text
-    } else {
-      // If the camera is not active, start the stream
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(function(newStream) {
-            stream = newStream;
-            videoElement.srcObject = stream;
-  
-            // Update UI to reflect the camera is on
-            videoElement.style.display = 'block'; // Show the video element
-            avatarElement.style.display = 'none'; // Hide the avatar
-            cameraButton.textContent = 'Turn Camera Off'; // Update button text
-  
-            // Play the video once the metadata has loaded
-            videoElement.onloadedmetadata = function() {
-              videoElement.play().catch(function(error) {
-                console.error("Error attempting to play video: ", error);
-              });
-            };
-          }).catch(function(error) {
-            console.error("Error accessing the camera: ", error);
-            alert("Error accessing the camera.");
-          });
-      } else {
-        alert("Your browser does not support media devices.");
-      }
-    }
   }
-  
-  // Event listener for camera button
+
+  async function toggleMicrophone() {
+      try {
+          if (microphoneStream) {
+              stopMediaStream(microphoneStream);
+              microphoneButton.textContent = 'Turn Microphone On';
+          } else {
+              microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              microphoneButton.textContent = 'Turn Microphone Off';
+              // Process the audio stream as needed
+          }
+      } catch (error) {
+          console.error("Error accessing the microphone: ", error);
+          alert("Error accessing the microphone.");
+      }
+  }
+
+  function stopMediaStream(stream) {
+      stream.getTracks().forEach(track => track.stop());
+  }
+
   cameraButton.addEventListener('click', toggleCamera);
+  microphoneButton.addEventListener('click', toggleMicrophone);
 
-  // Dropdown toggle function
-  function toggleDropdownMenu() {
-    var dropdownMenu = this.nextElementSibling;
-    dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
-  }
-
-  // Event listeners for dropdown-caret
-  var dropdownCarets = document.querySelectorAll('.dropdown-caret');
-  dropdownCarets.forEach(function(caret) {
-    caret.addEventListener('click', function(event) {
-      toggleDropdownMenu.call(this);
-      event.stopPropagation();
-    });
+  document.getElementById('join-btn').addEventListener('click', function() {
+      toggleCamera();  // Start the camera
+      startChatSession();  // Initiate chat with ChatGPT
   });
 
-  // Close the dropdown if the user clicks outside of it
-  window.onclick = function(event) {
-    var dropdownMenus = document.getElementsByClassName("dropdown-menu");
-    for (var i = 0; i < dropdownMenus.length; i++) {
-      var openDropdownMenu = dropdownMenus[i];
-      if (openDropdownMenu.style.display === 'block') {
-        openDropdownMenu.style.display = 'none';
-      }
-    }
-  };
+  function startChatSession() {
+      // Here you would implement the logic to start the chat session
+      console.log("Starting chat session");
+  }
+
+  // Other existing code for dropdowns and window click events...
 });

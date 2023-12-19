@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <title>Video Call Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .video-call-container {
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 10px;
+            height: 550px; /* Adjusted height */
+        }
+
+        .video-box {
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 10px;
+            height: 550px; /* Adjusted height */
+        }
+        video, img {
+            max-width: 100%;
+            height: 100%; /* Set height to fill the container */
+            object-fit: cover; /* This will ensure the video covers the full area, might crop a bit */
+        }
+
+        .video-window {
+            width: 300px;
+            height: 200px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .control-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .chat-container {
+            display: flex;
+            width: 100%;
+        }
+
+        .chat-box {
+            flex: 1;
+            margin: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+            font-size: 18px;
+        }
+
+        .subtitles {
+            position: absolute; /* Position it over the video */
+            bottom: 20px; /* Position it at the bottom of the video */
+            left: 0;
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+            color: white;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="video-box">
+                    <video id="userCamera" autoplay playsinline muted style="width: 100%; position: relative;"></video>
+                    <div id="subtitles" class="subtitles"></div> <!-- Subtitles div -->
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="video-box">
+                    <img src="https://i.gifer.com/QjoV.gif" alt="AI Avatar" style="width: 100%;">
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="icons-bar">
+                <button id="camera-toggle" class="btn icon" style="background-color: red;">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button id="microphone-toggle" class="btn icon" style="background-color: red;">
+                    <i class="fas fa-microphone-slash"></i>
+                </button>
+                <button id="exit-button" class="btn icon" style="background-color: red;">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var videoElement = document.getElementById('userCamera');
+    var cameraButton = document.getElementById('camera-toggle');
+    var microphoneButton = document.getElementById('microphone-toggle');
+    var isMicActive = false;
+    var isCameraActive = true; // Camera is on by default
+    var recognition;
+    var lastTranscript = '';
+    
+    // Access camera
+    function accessCamera() {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(newStream => {
+                stream = newStream;
+                videoElement.srcObject = stream;
+                videoElement.onloadedmetadata = () => videoElement.play();
+                updateCameraIcon(true);
+            }).catch(error => {
+                console.error("Error accessing the camera: ", error);
+                alert("Error accessing the camera.");
+                updateCameraIcon(false);
+            });
+    }
+
+    // Toggle camera
+    function toggleCamera() {
+        if (stream && isCameraActive) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+            updateCameraIcon(false);
+            isCameraActive = false;
+        } else {
+            accessCamera();
+            isCameraActive = true;
+        }
+    }
+
+    // Update camera icon
+    function updateCameraIcon(isCameraOn) {
+        const cameraIcon = cameraButton.querySelector('i');
+        if (isCameraOn) {
+            cameraIcon.classList.replace('fa-video-slash', 'fa-video');
+        } else {
+            cameraIcon.classList.replace('fa-video', 'fa-video-slash');
+        }
+    }
+
+    // Initialize camera on page load
+    accessCamera();
+
+
+    // Function to update the microphone icon
+    function updateMicrophoneIcon(isActive) {
+            const micIcon = microphoneButton.querySelector('i');
+            micIcon.classList.toggle('fa-microphone-slash', !isActive);
+            micIcon.classList.toggle('fa-microphone', isActive);
+        }
+
+    // Function to initialize speech recognition
+    function initializeSpeechRecognition() {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.interimResults = true;
+            recognition.continuous = true;
+
+            recognition.onresult = event => {
+                lastTranscript = Array.from(event.results)
+                    .map(result => result[0])
+                    .map(result => result.transcript)
+                    .join('');
+                document.getElementById('subtitles').innerText = lastTranscript;
+            };
+        }
+
+    // Initialize speech recognition
+    initializeSpeechRecognition();
+
+
+    // Function to toggle microphone
+    function toggleMicrophone() {
+            if (!isMicActive) {
+                initializeSpeechRecognition();
+                recognition.start();
+                lastTranscript = '';
+            } else {
+                recognition.stop();
+                if (lastTranscript.trim().length > 0) {
+                    sendTextToServer(lastTranscript);
+                }
+            }
+            isMicActive = !isMicActive;
+            updateMicrophoneIcon(isMicActive);
+        }
+        
+
+    // Function to handle the end of speech input
+    function handleSpeechEnd() {
+        clearTimeout(speechPauseTimer);
+        speechPauseTimer = setTimeout(() => {
+            sendTextToServer(lastTranscript); // Send the last transcript to the server
+            lastTranscript = ''; // Reset the transcript
+            document.getElementById('subtitles').innerText = ''; // Clear the subtitles
+        }, 2000); // 2-second pause
+    }
+
+    // Modified recognition.onresult function
+    recognition.onresult = event => {
+        clearTimeout(speechPauseTimer); // Clear existing timer
+        const transcript = Array.from(event.results)
+            .map(result => result[0])
+            .map(result => result.transcript)
+            .join('');
+            lastTranscript = Array.from(event.results)
+            .map(result => result[0])
+            .map(result => result.transcript)
+            .join('');
+        document.getElementById('subtitles').innerText = transcript;
+        handleSpeechEnd(); // Start/reset the pause timer
+    };
+
+
+    function sendTextToServer(text) {
+        const serverUrl = 'http://127.0.0.1:8000/meeting/api/sendtext';
+
+        fetch(serverUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text: text })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok.');
+            }
+            return response.blob(); // Treat response as a blob
+        })
+        .then(blob => {
+            const audioUrl = URL.createObjectURL(blob);
+            playAudioResponse(audioUrl);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+
+    function playAudioResponse(audioUrl) {
+        let audio = new Audio(audioUrl);
+        audio.play();
+        audio.onended = function() {
+            URL.revokeObjectURL(audioUrl); // Clean up after playback
+        };
+    }
+
+
+
+
+
+        // // Function to send the recognized text to the FastAPI server
+        // function sendTextToServer(text) {
+        //     const serverUrl = 'http://127.0.0.1:8000/meeting/api/sendtext';
+        //     fetch(serverUrl, {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json'
+        //         },
+        //         body: JSON.stringify({ text: text })
+        //     })
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         console.log('ChatGPT Response:', data);
+        //         playAudioResponse(data.audioUrl);
+        //     })
+        //     .catch((error) => {
+        //         console.error('Error:', error);
+        //     });
+        // }
+   
+
+    cameraButton.addEventListener('click', toggleCamera);
+    microphoneButton.addEventListener('click', toggleMicrophone);
+
+});
+    </script>
+</body>
+</html>
