@@ -11,6 +11,7 @@ from boto3.session import Session
 from io import BytesIO
 import os
 import boto3 
+import base64
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -37,9 +38,6 @@ polly_client = boto3.client('polly', aws_access_key_id=AWS_ACCESS_KEY,
 templates = Jinja2Templates(directory="templates")
 
 
-
-
-
  # Directory for static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -57,55 +55,36 @@ async def get_index(request: Request):
 async def get_meeting(request: Request):
     return templates.TemplateResponse("meeting.html", {"request": request})
 
-# # Function to handle WebSocket connection
-# @app.websocket("/ws/call")
-# async def websocket_endpoint(websocket: WebSocket):
-#     await websocket.accept()
-#     while True:
-#         data = await websocket.receive_text()
-#         response = get_chatgpt_response(data)  # Function to send text to ChatGPT and get response
-#         await websocket.send_text(response)
 
-# async def stream_audio_to_transcribe(client, audio_stream):
-#     """
-#     Streams audio to Amazon Transcribe and returns the transcription.
-#     """
-#     response = client.start_stream_transcription(
-#         LanguageCode='en-US',
-#         MediaSampleRateHertz=16000,
-#         MediaEncoding='pcm',
-#         # Additional configuration as needed
-#     )
-
-#     # Sending audio chunks to Transcribe
-#     for chunk in audio_stream:
-#         await response['AudioStream'].send_audio_event(AudioChunk=chunk)
-
-#     # Indicate that you have finished sending chunks
-#     await response['AudioStream'].end_stream()
-
-#     # Collect and process the transcription results
-#     transcript = ""
-#     async for event in response['TranscriptResultStream']:
-#         # The response might contain multiple events. We are interested in the TranscriptionEvent
-#         if 'TranscriptEvent' in event:
-#             results = event['TranscriptEvent']['Transcript']['Results']
-#             for result in results:
-#                 if result.get('IsFinal', False):
-#                     # Extracting the transcript from the final result
-#                     transcript += result['Alternatives'][0]['Transcript'] + ' '
-
-#     return transcript.strip()
 
 @app.post("/meeting/api/sendtext")
 async def send_text(data: TextData):
     chat_response = get_chatgpt_response(data.text)
     audio_stream = aws_polly_speak(chat_response)
+    audio_stream_bytes = BytesIO(audio_stream).read()  # Read bytes from audio stream
+    audio_stream_blob = base64.b64encode(audio_stream_bytes).decode()  # Convert to base64 string
+    return {"chatResponse": chat_response, "audioStreamBlob": audio_stream_blob}
+
+
+
+@app.post("/meeting/api/audio")
+async def get_audio(data: TextData):
+    # Convert the received text to speech
+    audio_stream = aws_polly_speak(data.text)
     return StreamingResponse(BytesIO(audio_stream), media_type="audio/mpeg")
+
 
 
 # Function to get ChatGPT response
 def get_chatgpt_response(prompt):
+    # Ensure OPENAI_API_KEY and OPENAI_ENDPOINT are loaded from environment variables
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    OPENAI_ENDPOINT = os.getenv('OPENAI_ENDPOINT')  # Ensure this is set in your .env file
+
+    # Check if API key is loaded
+    if not OPENAI_API_KEY:
+        raise HTTPException(status_code=500, detail="OpenAI API key is not set.")
+
     headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {OPENAI_API_KEY}'
@@ -117,15 +96,27 @@ def get_chatgpt_response(prompt):
             {'role': 'user', 'content': prompt},
         ]
     }
-    response = requests.post(
-        OPENAI_ENDPOINT,
-        headers=headers,
-        data=json.dumps(data)
-    )
-    if response.status_code == 200:
-        return response.json()['choices'][0]['message']['content']
-    else:
-        raise HTTPException(status_code=response.status_code, detail="Error from ChatGPT API")
+    try:
+        response = requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers=headers,
+            data=json.dumps(data)
+        )
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error in calling OpenAI API: {e}")
+
+    # Check for non-success status codes
+    if response.status_code != 200:
+        error_detail = response.json().get('error', {}).get('message', 'Unknown error')
+        raise HTTPException(status_code=response.status_code, detail=f"Error from ChatGPT API: {error_detail}")
+
+    return response.json()['choices'][0]['message']['content']
+
+
+def upload_to_s3(audio_stream, bucket_name, s3_filename):
+    s3_client = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY, region_name=AWS_REGION)
+    s3_client.upload_fileobj(BytesIO(audio_stream), bucket_name, s3_filename)
+
 
 
 # Function to synthesize speech using Amazon Polly
