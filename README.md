@@ -53,7 +53,11 @@ python Scrum.py
 
 ## Usage
 
-[Provide examples and explanations of how to use the project, potentially with code snippets or screenshots.]
+Copy the link from the terminal and paste it in your browser
+
+After entering your username ,click on Join
+
+For giving input to chatgpt , turn ON the microphone . After giving your speech input , turn OFF your microphone , your speech input will be processed in the backend  and chatgpt will give response.
 
 ## Contributing to [Project Name]
 
